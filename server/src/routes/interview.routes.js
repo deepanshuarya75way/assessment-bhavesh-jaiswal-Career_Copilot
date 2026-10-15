@@ -11,6 +11,8 @@ import {
   updateResume,
   getAtsScore,
   downloadResumePdf,
+  askReportFollowUp,
+  updateProgress,
 } from '../controllers/interview.controller.js';
 
 const router = Router();
@@ -22,6 +24,7 @@ router.use(protect);
 router.post('/generate', upload.single('resume'), generateReport);
 router.get('/', getAllReports);
 router.get('/:id', getReport);
+router.post('/:id/follow-up',askReportFollowUp)
 router.delete('/:id', deleteReport);
 router.put('/:id/progress', updateProgress);
 

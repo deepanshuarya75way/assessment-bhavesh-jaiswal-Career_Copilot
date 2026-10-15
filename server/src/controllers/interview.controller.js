@@ -6,8 +6,10 @@ import {
   generateResume,
   analyzeAtsScore,
   classifyAiError,
+  answerReportFolloUp
 } from '../services/ai.service.js';
 
+import mongoose from 'mongoose';
 /**
  * POST /api/interview/generate
  * Upload resume (optional) + job description + self description → AI analysis.
@@ -140,6 +142,85 @@ export const deleteReport = asyncHandler(async (req, res) => {
   }
 
   res.json({ success: true, message: 'Report deleted.' });
+});
+
+export const askReportFollowUP = asyncHandler(async(req,res)=>{
+  const question = 
+  typeof req.body.question ==='string'
+  ? req.body.question.trim()
+  : '';
+  
+  
+  if(!question){
+    throw new AppError(
+      'Please enter a question.',
+      400,
+      'EMPTY_QUESTION'
+    );
+  }
+
+  if(question.length>2000){
+    throw new AppError(
+      'Question must be 2,000 characters or fewer.',
+      400,
+      'QUESTION_TOO_LONG'
+    );
+  }
+
+  if(!mongoose.isValidObjectId(req.params.id)){
+    throw new AppError('Report not found.',404);
+  }
+
+  const report = await InterviewReport.findbyId(re.params.id);
+
+  if(!report){
+    throw new AppError('Report not found.',404);
+  }
+
+  if(report.userId.toString()!==req.user._id.toString()){
+    throw new AppError(
+      'You are not authorized to acccess this report',
+      403,
+      'REPORT_FORBIDDEN'
+    );
+  }
+
+  let result;
+  try{
+      result = await answerReportFolloUp(
+      report,
+      report,
+      report.followUpMessages ||[],
+      question
+    );
+  }catch(err){
+    console.error('Follow-Up answer error:',err);
+
+    const classified = classifyAiError(err);
+    
+
+    throw new Apperror(
+      classified.message,
+      classified.statusCode,
+      classified.code,
+      classified
+    );
+  }
+
+  report.followUpMessages.push({
+    question,answer:result.answer,
+  });
+
+  await report.save();
+
+  res.status(201).json({
+    success:true,
+    data:report.followUpMessages[
+      report.followUpMessages.length-1
+    ],
+    messages:report.followUpMessages,
+  });
+
 });
 
 /**

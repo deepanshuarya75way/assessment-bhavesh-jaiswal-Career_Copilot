@@ -9,6 +9,9 @@ import {
   ExternalLink,
   Target,
   Sparkles,
+  MessageCircle,
+  Send,
+  LoaderCircle,
 } from 'lucide-react';
 import api from '../services/api.js';
 import { PageHeader } from '../components/PageHeader.jsx';
@@ -21,7 +24,9 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'skills' | 'technical' | 'behavioral' | 'roadmap'
-
+  const [followUpQuestion, setFollowUpQuestion] = useState('');
+  const [followUpMessages, serFollowUpMessages] = useState([]);
+  const [followUpLoading,SetFollowUpLoading] = useState(false);
   // Copy helper
   const handleCopy = (text, label = 'Content') => {
     navigator.clipboard.writeText(text);
@@ -33,6 +38,9 @@ export default function ReportDetailPage() {
       try {
         const res = await api.get(`/interview/${id}`);
         setReport(res.data.data);
+        setFollowUpMessages(
+          res.data.data.followUpMessages || []
+        );
       } catch {
         toast.error('Failed to load report.');
       } finally {
@@ -41,6 +49,43 @@ export default function ReportDetailPage() {
     };
     fetchReport();
   }, [id]);
+
+  const handleFollowUpSubmit = async(event)=>{
+    event.preventDefault();
+
+    const question = followUpQuestion.trim();
+    
+    if(!question){
+      toast.error('please enter a question.');
+      return ;
+    }
+
+    setFollowUpLoading(true);
+
+    try{
+      const res = await api.post(
+        `/interview/${id}/follow-up`,
+        {question}
+      );
+
+
+
+      setFollowUpMessages(
+        res.data.Messages ||
+        [...followUpMessages,res.data.data]
+      );
+
+      setFollowUpQuestion('');
+    }catch(error){
+      toast.error(
+        error.message ||
+        'Unable to answer this follow-Up Question.'
+      );
+    }finally{
+      setFollowUpLoading(false);
+    }
+  };
+
 
   if (loading) {
     return (
@@ -137,6 +182,86 @@ export default function ReportDetailPage() {
             </div>
           </div>
         </div>
+        <card className="p-5 sm:p-6 boarder-[#E7E1F1] space-y-4">
+          <div className="flex item-start gap-3">
+            <div className="w-10 h-10 rounded-x1 bg-[#f2EDFC] text-[#6845C5] flex items-center
+            justify-center shrink-0">
+              <MessageCircle className="w-5 h-5"/>
+            </div>
+
+          <div>
+            <h2 className = "text-base font-bold text-[#26213A]">
+              Ask a Follow-Up Question
+            </h2>
+            <p clasName= "text-xs sm:text-sm text-[#716B85] mt-1">
+              Ask about this report skills,interview question, or Preparation roadmap.
+            </p>
+          </div>
+          </div>
+
+          {followUpMessages.length>0 && (
+            <div
+            className="space-y-4 max-h-[520px] overflow-y-auto pr-1"
+            aria-live="polite">
+
+              {followUpMessages.map((message,index)=>
+              <div
+              key={message._id || `${message.createdAt || index}-${index}`}
+              className="space-y-3">
+                <div className="ml-auto max-1-[92%] sm:max-w-[85%] rouunded-2xl rounded-br-md bg-[#6845C5] text-white p-4">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-white/ 70 mb-1">
+                  your question . {index+1}
+                </div>
+
+                <p className="text-sm whitespace-pre-wrap break-words">
+                  {message.question}
+                  </p>
+                </div>
+
+                <div className="max-w-[95%] sm:max-w-[90%] rounded-2xl rounded-bl-md bg-[#F8F7FC] boarder boarder-[#E7E1F1] p-4">
+                 <div className="text-[10px] uppercase tracking-winder font-bold text-[#6845C5] mb-1">
+                  carrer copilet
+                </div>
+              <p className="text-sm text-[#26213A] leading-relaxed whitespace-pre-wrap break-words">
+                {message.answer}
+              </p>
+                </div>
+              </div>
+              ))}
+              </div>
+
+              
+          )}
+
+          {followUpMessages.length===0 &&(
+            <div className="rounded-xl border border-dashed norder-[#DCD3ED] bg-[#FBFAFE] p-5 text-center">
+              
+              <p className = "text-sm font-semibold text- [#49316f]">
+                continue your analysis
+              </p>
+
+              <p className="text-xs text-[#716B85] mt-1">
+                your question and answers will stay with this report.
+              </P>
+            </div>
+          )}
+
+          <form onSubmit={handleFollowUpSubmit} className="space-y-2">
+            <label
+              htmlFor="follow-up-question"
+              className="block text-xs font-bold text-[#49316F]">
+                your Question
+            </label>
+
+            <textarea
+              id="follow-up-question"
+              value={followUpQuestion}
+              onChange={(event)=>
+                setFollowUpQuestion(event.target.value)
+              }
+              placeholder="For example:How Should I improve the skill "
+            
+
 
         {/* Executive Summaries */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-5">

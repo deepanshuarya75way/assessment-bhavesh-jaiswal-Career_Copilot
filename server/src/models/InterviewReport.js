@@ -72,6 +72,26 @@ const interviewReportSchema = new mongoose.Schema(
       },
     ],
 
+    // Follow up Message 
+    followUpMeassge:[
+      {
+        question:{
+          type:String,
+          required:true,
+          trim:true,
+        },
+        answer:{
+          type:String,
+          required:true,
+        },
+
+        createdAt:{
+          type:Date,
+          default:Date.now,
+        }
+      }
+    ]
+
     // ATS Resume data (null until generated)
     resumeData: {
       type: mongoose.Schema.Types.Mixed,
